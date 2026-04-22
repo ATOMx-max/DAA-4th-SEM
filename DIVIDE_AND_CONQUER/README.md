@@ -117,6 +117,6 @@ Total Comparisons = 6
 
 ## 👨‍💻 Author
 
-Your Name
+SOUVIK SARKAR
 
 ---
