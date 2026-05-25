@@ -30,6 +30,7 @@ void insert_end(struct node **head,int key)
 int main()
 {
     FILE *fp;
+    //file oppen
     fp=fopen("ex.txt","r");
     if(fp==NULL)
     {
@@ -37,8 +38,9 @@ int main()
         exit(1);
     }
     int n;
-    fscanf(fp,"%d",&n);
-    //store
+    fscanf(fp,"%d",&n);//It reads the next integer from the file and stores it in n
+    
+    //store of the graph in 2d array
     int grp[n][n];
     for(int i=0;i<n;i++)
     {
@@ -48,6 +50,8 @@ int main()
         }
     }
     fclose(fp);
+
+    //logic of adj list start->
     struct node *table[n];
     for(int i=0;i<n;i++)
     {
