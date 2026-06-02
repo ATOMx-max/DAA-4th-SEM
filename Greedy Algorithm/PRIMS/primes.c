@@ -3,46 +3,55 @@
 #include<limits.h>
 #include <stdbool.h>
 #define MAX 100
-int Q_grp[MAX];
+//for priority hep queue here we nedd to short with weight not vertex
 int heapsize=0;
 struct graph{
     int key;
     int parent;
 };
-
-void heapadj(int arr[],int i,int n)
+struct priority
 {
-    int key=arr[i];
-    int j=2*i;
-    while(j<=n)
+    int vertex;
+    int key;
+    int parent;
+};
+struct priority Q_grp[MAX];
+void heapadj(struct priority arr[], int i, int n)
+{
+    struct priority temp = arr[i];
+    int j = 2 * i;
+    while(j <= n)
     {
-        if(j<n && arr[j]>arr[j+1])
-        {
-            j=j+1;
-        }
-        if(key<arr[j])break;
-        arr[j/2]=arr[j];
-        j=2*j;
+        if(j < n && arr[j].key > arr[j+1].key)
+            j++;
+
+        if(temp.key <= arr[j].key)
+            break;
+
+        arr[j/2] = arr[j];
+        j = 2 * j;
     }
-    arr[j/2]=key;
+    arr[j/2] = temp;
 }
 
-void swap(int arr[],int i,int j)
+void swap(struct priority arr[], int i, int j)
 {
-    int temp=arr[j];
-    arr[j]=arr[i];
-    arr[i]=temp;
+    struct priority temp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = temp;
 }
-void insert(int key)
+void insert(int v,int key,int p)
 {
     if(heapsize==MAX+1)
     {
         printf("OVERFLOW\n");
     }
     heapsize=heapsize+1;
-    Q_grp[heapsize]=key;
+    Q_grp[heapsize].key=key;
+    Q_grp[heapsize].vertex=v;
+    Q_grp[heapsize].parent=p;
     int i=heapsize;
-    while(i>1 && Q_grp[i/2]>Q_grp[i])
+    while(i>1 && Q_grp[i/2].key>Q_grp[i].key)
     {
         swap(Q_grp,i,i/2);
         i=i/2;
@@ -52,22 +61,31 @@ int is_empty()
 {
     return heapsize==0?1:0;
 }
-int extract_min()
+struct priority extract_min()
 {
-    if(heapsize==0)
+    struct priority minnode;
+
+    minnode.vertex = -1;
+    minnode.key = INT_MAX;
+    minnode.parent = -1;
+
+    if(heapsize == 0)
+        return minnode;
+
+    minnode = Q_grp[1];
+
+    if(heapsize == 1)
     {
-        return INT_MAX;
+        heapsize--;
+        return minnode;
     }
-    if(heapsize==1)
-    {
-        heapsize=heapsize-1;
-        return Q_grp[1];
-    }
-    int min=Q_grp[1];
-    Q_grp[1]=Q_grp[heapsize];
+
+    Q_grp[1] = Q_grp[heapsize];
     heapsize--;
+
     heapadj(Q_grp,1,heapsize);
-    return min;
+
+    return minnode;
 }
 void decrise_key(int i, int keyval)
 {
@@ -75,10 +93,9 @@ void decrise_key(int i, int keyval)
     {
         return;
     }
+    Q_grp[i].key = keyval;
 
-    Q_grp[i] = keyval;
-
-    while(i > 1 && Q_grp[i/2] > Q_grp[i])
+    while(i > 1 && Q_grp[i/2].key > Q_grp[i].key)
     {
         swap(Q_grp, i, i/2);
 
@@ -96,10 +113,11 @@ void primes(int ver,int w_matrix[ver][ver],bool MST[],struct graph grp[],int r)
         MST[i]=false;
     }
     grp[r].key=0;
-    insert(r);
+    insert(r,0,-1);
     while(!is_empty())
     {
-        int u=extract_min();
+        struct priority node = extract_min();
+        int u = node.vertex;
         MST[u]=true;
         for(int v=0;v<ver;v++)
         {
@@ -109,42 +127,59 @@ void primes(int ver,int w_matrix[ver][ver],bool MST[],struct graph grp[],int r)
                 {
                     grp[v].key=w_matrix[u][v];
                     grp[v].parent=u;
-                    decrise_key(v,grp[v].key);
+                    insert(v,grp[v].key,grp[v].parent);
                 }
             }
         }
     }
-
 }
-
 int main()
 {
-    FILE *fp;
-    fp=fopen("grp.txt","r");
-    int ver,Edges;
-    fscanf(fp,"%d",&ver);
-    fscanf(fp,"%d",&Edges);
-    printf("%d \n%d\n",ver,Edges);
-    int w_matrix[ver][ver];
-    for(int i=0;i<ver;i++)
+    FILE *fp = fopen("grp.txt", "r");
+
+    if(fp == NULL)
     {
-        for(int j=0;j<ver;j++)
+        printf("File not found\n");
+        return 0;
+    }
+
+    int ver, edges;
+
+    fscanf(fp, "%d", &ver);
+    fscanf(fp, "%d", &edges);
+
+    int w_matrix[ver][ver];
+
+    for(int i=0; i<ver; i++)
+    {
+        for(int j=0; j<ver; j++)
         {
-            fscanf(fp,"%d",&w_matrix[i][j]);
+            fscanf(fp, "%d", &w_matrix[i][j]);
         }
     }
 
-    for(int i=0;i<ver;i++)
-    {
-        for(int j=0;j<ver;j++)
-        {
-            printf("%d\t",w_matrix[i][j]);
-        }
-        printf("\n");
-    }
     fclose(fp);
+
     struct graph grp[ver];
     bool MST[ver];
-    primes(ver,w_matrix,MST,grp,0);
+
+    primes(ver, w_matrix, MST, grp, 0);
+
+    printf("\nMST Edges:\n");
+
+    int cost = 0;
+
+    for(int i=1; i<ver; i++)
+    {
+        printf("%d - %d : %d\n",
+               grp[i].parent,
+               i,
+               grp[i].key);
+
+        cost += grp[i].key;
+    }
+
+    printf("\nTotal Cost = %d\n", cost);
+
     return 0;
 }
